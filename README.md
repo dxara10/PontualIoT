@@ -36,4 +36,18 @@ cd api-core && mvn test
 
 # Teste específico
 mvn test -Dtest=AttendanceTestControllerTDDTest
+
+# Executar esteira CI/CD completa
+bash run-ci-cd.sh
 ```
+
+## 🚀 CI/CD Pipeline
+```bash
+# Executar localmente
+bash run-ci-cd.sh
+
+# GitHub Actions (automático)
+git push origin main
+```
+
+📚 **[Documentação Completa CI/CD](docs/ci-cd.md)**
