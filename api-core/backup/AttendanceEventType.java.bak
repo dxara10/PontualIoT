@@ -1,9 +1,0 @@
-package com.pontualiot.demo.model;
-
-public enum AttendanceEventType {
-    CHECK_IN,
-    CHECK_OUT,
-    BREAK_START,
-    BREAK_END,
-    OTHER
-}
