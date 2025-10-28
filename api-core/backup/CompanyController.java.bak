@@ -1,0 +1,36 @@
+package com.pontualiot.demo.controller;
+
+import com.pontualiot.demo.dto.CompanyRequest;
+import com.pontualiot.demo.model.Company;
+import com.pontualiot.demo.service.CompanyService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/companies")
+public class CompanyController {
+
+    @Autowired
+    private CompanyService companyService;
+
+    @PostMapping
+    public ResponseEntity<Company> createCompany(@Valid @RequestBody CompanyRequest request) {
+        Company company = companyService.create(request.getName(), request.getDocument(), request.getAddress());
+        return ResponseEntity.status(HttpStatus.CREATED).body(company);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Company> getCompany(@PathVariable UUID id) {
+        try {
+            Company company = companyService.findById(id);
+            return ResponseEntity.ok(company);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+}

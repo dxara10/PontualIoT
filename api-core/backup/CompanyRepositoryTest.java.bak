@@ -1,0 +1,85 @@
+package com.pontualiot.demo.repository;
+
+import com.pontualiot.demo.model.Company;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DataJpaTest
+@ActiveProfiles("test")
+class CompanyRepositoryTest {
+
+    @Autowired
+    private CompanyRepository companyRepository;
+
+    @Test
+    void shouldSaveAndFindCompany() {
+        // Given
+        Company company = new Company();
+        company.setName("Tech Corp");
+        company.setDocument("12345678000195");
+        company.setAddress("Rua das Flores, 123");
+
+        // When
+        Company saved = companyRepository.save(company);
+
+        // Then
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getName()).isEqualTo("Tech Corp");
+        assertThat(saved.getDocument()).isEqualTo("12345678000195");
+        assertThat(saved.getActive()).isTrue();
+    }
+
+    @Test
+    void shouldFindByDocument() {
+        // Given
+        Company company = new Company();
+        company.setName("Tech Corp");
+        company.setDocument("12345678000195");
+        companyRepository.save(company);
+
+        // When
+        Optional<Company> found = companyRepository.findByDocument("12345678000195");
+
+        // Then
+        assertThat(found).isPresent();
+        assertThat(found.get().getName()).isEqualTo("Tech Corp");
+    }
+
+    @Test
+    void shouldReturnEmptyWhenDocumentNotFound() {
+        // When
+        Optional<Company> found = companyRepository.findByDocument("99999999000199");
+
+        // Then
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void shouldFindActiveCompaniesOnly() {
+        // Given
+        Company activeCompany = new Company();
+        activeCompany.setName("Active Corp");
+        activeCompany.setDocument("11111111000111");
+        activeCompany.setActive(true);
+        companyRepository.save(activeCompany);
+
+        Company inactiveCompany = new Company();
+        inactiveCompany.setName("Inactive Corp");
+        inactiveCompany.setDocument("22222222000222");
+        inactiveCompany.setActive(false);
+        companyRepository.save(inactiveCompany);
+
+        // When
+        var activeCompanies = companyRepository.findByActiveTrue();
+
+        // Then
+        assertThat(activeCompanies).hasSize(1);
+        assertThat(activeCompanies.get(0).getName()).isEqualTo("Active Corp");
+    }
+}

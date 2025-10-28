@@ -1,0 +1,9 @@
+package com.pontualiot.demo.model;
+
+public enum CommandStatus {
+    PENDING,
+    SENT,
+    ACKNOWLEDGED,
+    FAILED,
+    TIMEOUT
+}

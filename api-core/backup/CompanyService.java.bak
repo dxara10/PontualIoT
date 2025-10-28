@@ -1,0 +1,40 @@
+package com.pontualiot.demo.service;
+
+import com.pontualiot.demo.model.Company;
+import com.pontualiot.demo.repository.CompanyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
+@Service
+public class CompanyService {
+
+    @Autowired
+    private CompanyRepository companyRepository;
+
+    public Company create(String name, String document, String address) {
+        if (companyRepository.findByDocument(document).isPresent()) {
+            throw new IllegalArgumentException("Company with document " + document + " already exists");
+        }
+
+        Company company = new Company();
+        company.setName(name);
+        company.setDocument(document);
+        company.setAddress(address);
+        company.setActive(true);
+
+        return companyRepository.save(company);
+    }
+
+    public Company findById(UUID id) {
+        return companyRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + id));
+    }
+
+    public void delete(UUID id) {
+        Company company = findById(id);
+        company.setActive(false);
+        companyRepository.save(company);
+    }
+}

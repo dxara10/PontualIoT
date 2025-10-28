@@ -1,0 +1,91 @@
+package com.pontualiot.demo.repository;
+
+import com.pontualiot.demo.entity.Employee;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DataJpaTest
+@Testcontainers
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class EmployeeRepositoryTest {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Test
+    void shouldSaveAndFindEmployee() {
+        // Given
+        Employee employee = Employee.builder()
+                .name("João Silva")
+                .email("joao@pontual.com")
+                .rfidTag("RF123456")
+                .active(true)
+                .build();
+
+        // When
+        Employee saved = employeeRepository.save(employee);
+
+        // Then
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getName()).isEqualTo("João Silva");
+        assertThat(saved.getEmail()).isEqualTo("joao@pontual.com");
+        assertThat(saved.getRfidTag()).isEqualTo("RF123456");
+        assertThat(saved.isActive()).isTrue();
+    }
+
+    @Test
+    void shouldFindByRfidTag() {
+        // Given
+        Employee employee = Employee.builder()
+                .name("Maria Santos")
+                .email("maria@pontual.com")
+                .rfidTag("RF789012")
+                .active(true)
+                .build();
+        employeeRepository.save(employee);
+
+        // When
+        Optional<Employee> found = employeeRepository.findByRfidTag("RF789012");
+
+        // Then
+        assertThat(found).isPresent();
+        assertThat(found.get().getName()).isEqualTo("Maria Santos");
+    }
+
+    @Test
+    void shouldFindByEmail() {
+        // Given
+        Employee employee = Employee.builder()
+                .name("Pedro Costa")
+                .email("pedro@pontual.com")
+                .rfidTag("RF345678")
+                .active(true)
+                .build();
+        employeeRepository.save(employee);
+
+        // When
+        Optional<Employee> found = employeeRepository.findByEmail("pedro@pontual.com");
+
+        // Then
+        assertThat(found).isPresent();
+        assertThat(found.get().getRfidTag()).isEqualTo("RF345678");
+    }
+
+    @Test
+    void shouldReturnEmptyWhenRfidTagNotFound() {
+        // When
+        Optional<Employee> found = employeeRepository.findByRfidTag("NONEXISTENT");
+
+        // Then
+        assertThat(found).isEmpty();
+    }
+}

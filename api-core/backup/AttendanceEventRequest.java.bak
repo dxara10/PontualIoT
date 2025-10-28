@@ -1,0 +1,12 @@
+package com.pontualiot.demo.dto;
+
+import jakarta.validation.constraints.NotNull;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+public record AttendanceEventRequest(
+    @NotNull UUID deviceId,
+    @NotNull UUID employeeId,
+    @NotNull String eventType,
+    @NotNull OffsetDateTime eventTime
+) {}

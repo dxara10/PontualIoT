@@ -1,0 +1,89 @@
+package com.pontualiot.demo.model;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "device_commands", 
+       indexes = {
+           @Index(columnList = "device_id, created_at"),
+           @Index(columnList = "status")
+       })
+@EntityListeners(AuditingEntityListener.class)
+public class DeviceCommand {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "device_id", nullable = false)
+    private Device device;
+    
+    @NotBlank
+    @Column(nullable = false, length = 50)
+    private String commandType; // REBOOT, SYNC_TIME, FIRMWARE_UPDATE, CUSTOM
+    
+    @Column(columnDefinition = "jsonb")
+    private String payload;
+    
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CommandStatus status = CommandStatus.PENDING;
+    
+    @Column(length = 100)
+    private String originUser; // who triggered
+    
+    private OffsetDateTime sentAt;
+    
+    private OffsetDateTime acknowledgedAt;
+    
+    @Column(columnDefinition = "text")
+    private String errorMessage;
+    
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+    
+    @LastModifiedDate
+    private OffsetDateTime updatedAt;
+    
+    // Getters/Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    
+    public Device getDevice() { return device; }
+    public void setDevice(Device device) { this.device = device; }
+    
+    public String getCommandType() { return commandType; }
+    public void setCommandType(String commandType) { this.commandType = commandType; }
+    
+    public String getPayload() { return payload; }
+    public void setPayload(String payload) { this.payload = payload; }
+    
+    public CommandStatus getStatus() { return status; }
+    public void setStatus(CommandStatus status) { this.status = status; }
+    
+    public String getOriginUser() { return originUser; }
+    public void setOriginUser(String originUser) { this.originUser = originUser; }
+    
+    public OffsetDateTime getSentAt() { return sentAt; }
+    public void setSentAt(OffsetDateTime sentAt) { this.sentAt = sentAt; }
+    
+    public OffsetDateTime getAcknowledgedAt() { return acknowledgedAt; }
+    public void setAcknowledgedAt(OffsetDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
+    
+    public String getErrorMessage() { return errorMessage; }
+    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+    
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+}

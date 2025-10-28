@@ -1,0 +1,76 @@
+package com.pontualiot.demo.service;
+
+import com.pontualiot.demo.dto.AttendanceEventRequest;
+import com.pontualiot.demo.model.*;
+import com.pontualiot.demo.repository.AttendanceEventRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class AttendanceService {
+
+    @Autowired
+    private AttendanceEventRepository attendanceEventRepository;
+
+    @Autowired
+    private DeviceService deviceService;
+
+    // TODO: Add EmployeeService when implemented
+
+    public AttendanceEvent processEvent(UUID companyId, String deviceSerial, String employeeRegistration, 
+                                      AttendanceEventType eventType, OffsetDateTime eventTime, String origin) {
+        
+        Device device = deviceService.findBySerialNumber(deviceSerial);
+        // TODO: Implement employee lookup
+        // Employee employee = employeeService.findByCompanyAndRegistration(companyId, employeeRegistration);
+
+        // Validate device belongs to company
+        if (!device.getCompany().getId().equals(companyId)) {
+            throw new IllegalArgumentException("Device does not belong to the specified company");
+        }
+
+        // TODO: Validate employee belongs to company
+        // if (!employee.getCompany().getId().equals(companyId)) {
+        //     throw new IllegalArgumentException("Employee does not belong to the specified company");
+        // }
+
+        // Check for duplicate events (within 1 minute window)
+        OffsetDateTime startWindow = eventTime.minusMinutes(1);
+        OffsetDateTime endWindow = eventTime.plusMinutes(1);
+        List<AttendanceEvent> duplicates = attendanceEventRepository.findDuplicateEvents(
+            device.getId(), employeeRegistration, startWindow, endWindow
+        );
+
+        if (!duplicates.isEmpty()) {
+            throw new IllegalArgumentException("Duplicate event detected within time window");
+        }
+
+        AttendanceEvent event = new AttendanceEvent();
+        event.setDevice(device);
+        // event.setEmployee(employee); // TODO: Uncomment when Employee is available
+        event.setEventType(eventType);
+        event.setEventTime(eventTime);
+        event.setOrigin(origin);
+
+        return attendanceEventRepository.save(event);
+    }
+
+    public UUID recordEvent(AttendanceEventRequest request) {
+        Device device = deviceService.findById(request.deviceId());
+        // Employee employee = employeeService.findById(request.employeeId()); // TODO: Implement
+        
+        AttendanceEvent event = new AttendanceEvent();
+        event.setDevice(device);
+        // event.setEmployee(employee); // TODO: Uncomment when Employee is available
+        event.setEventType(AttendanceEventType.valueOf(request.eventType()));
+        event.setEventTime(request.eventTime());
+        event.setOrigin("HTTP");
+        
+        AttendanceEvent savedEvent = attendanceEventRepository.save(event);
+        return savedEvent.getId();
+    }
+}

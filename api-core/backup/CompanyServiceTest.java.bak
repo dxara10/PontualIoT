@@ -1,0 +1,106 @@
+package com.pontualiot.demo.service;
+
+import com.pontualiot.demo.model.Company;
+import com.pontualiot.demo.repository.CompanyRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class CompanyServiceTest {
+
+    @Mock
+    private CompanyRepository companyRepository;
+
+    @InjectMocks
+    private CompanyService companyService;
+
+    private Company testCompany;
+
+    @BeforeEach
+    void setUp() {
+        testCompany = new Company();
+        testCompany.setId(UUID.randomUUID());
+        testCompany.setName("Tech Corp");
+        testCompany.setDocument("12345678000195");
+        testCompany.setAddress("Rua das Flores, 123");
+        testCompany.setActive(true);
+    }
+
+    @Test
+    void shouldCreateCompanyWithValidData() {
+        // Given
+        when(companyRepository.findByDocument("12345678000195")).thenReturn(Optional.empty());
+        when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
+
+        // When
+        Company created = companyService.create("Tech Corp", "12345678000195", "Rua das Flores, 123");
+
+        // Then
+        assertThat(created.getName()).isEqualTo("Tech Corp");
+        assertThat(created.getDocument()).isEqualTo("12345678000195");
+        assertThat(created.getActive()).isTrue();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDocumentAlreadyExists() {
+        // Given
+        when(companyRepository.findByDocument("12345678000195")).thenReturn(Optional.of(testCompany));
+
+        // When & Then
+        assertThatThrownBy(() -> 
+            companyService.create("Another Corp", "12345678000195", "Outra Rua, 456")
+        ).isInstanceOf(IllegalArgumentException.class)
+         .hasMessage("Company with document 12345678000195 already exists");
+    }
+
+    @Test
+    void shouldFindCompanyById() {
+        // Given
+        UUID companyId = testCompany.getId();
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(testCompany));
+
+        // When
+        Company found = companyService.findById(companyId);
+
+        // Then
+        assertThat(found).isEqualTo(testCompany);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCompanyNotFound() {
+        // Given
+        UUID nonExistentId = UUID.randomUUID();
+        when(companyRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> companyService.findById(nonExistentId))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Company not found with id: " + nonExistentId);
+    }
+
+    @Test
+    void shouldSoftDeleteCompany() {
+        // Given
+        UUID companyId = testCompany.getId();
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(testCompany));
+        when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
+
+        // When
+        companyService.delete(companyId);
+
+        // Then
+        assertThat(testCompany.getActive()).isFalse();
+    }
+}

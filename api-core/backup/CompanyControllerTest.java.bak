@@ -1,0 +1,120 @@
+package com.pontualiot.demo.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pontualiot.demo.model.Company;
+import com.pontualiot.demo.service.CompanyService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(CompanyController.class)
+class CompanyControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private CompanyService companyService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private Company testCompany;
+
+    @BeforeEach
+    void setUp() {
+        testCompany = new Company();
+        testCompany.setId(UUID.randomUUID());
+        testCompany.setName("Tech Corp");
+        testCompany.setDocument("12345678000195");
+        testCompany.setAddress("Rua das Flores, 123");
+        testCompany.setActive(true);
+    }
+
+    @Test
+    @WithMockUser
+    void shouldCreateCompanySuccessfully() throws Exception {
+        // Given
+        when(companyService.create(eq("Tech Corp"), eq("12345678000195"), eq("Rua das Flores, 123")))
+            .thenReturn(testCompany);
+
+        String requestBody = """
+            {
+                "name": "Tech Corp",
+                "document": "12345678000195",
+                "address": "Rua das Flores, 123"
+            }
+            """;
+
+        // When & Then
+        mockMvc.perform(post("/api/companies")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+                .with(csrf()))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.name").value("Tech Corp"))
+            .andExpect(jsonPath("$.document").value("12345678000195"))
+            .andExpect(jsonPath("$.active").value(true));
+    }
+
+    @Test
+    @WithMockUser
+    void shouldReturnBadRequestWhenNameIsMissing() throws Exception {
+        // Given
+        String requestBody = """
+            {
+                "document": "12345678000195",
+                "address": "Rua das Flores, 123"
+            }
+            """;
+
+        // When & Then
+        mockMvc.perform(post("/api/companies")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+                .with(csrf()))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void shouldGetCompanyById() throws Exception {
+        // Given
+        UUID companyId = testCompany.getId();
+        when(companyService.findById(companyId)).thenReturn(testCompany);
+
+        // When & Then
+        mockMvc.perform(get("/api/companies/{id}", companyId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(companyId.toString()))
+            .andExpect(jsonPath("$.name").value("Tech Corp"))
+            .andExpect(jsonPath("$.document").value("12345678000195"));
+    }
+
+    @Test
+    @WithMockUser
+    void shouldReturnNotFoundWhenCompanyDoesNotExist() throws Exception {
+        // Given
+        UUID nonExistentId = UUID.randomUUID();
+        when(companyService.findById(nonExistentId))
+            .thenThrow(new IllegalArgumentException("Company not found with id: " + nonExistentId));
+
+        // When & Then
+        mockMvc.perform(get("/api/companies/{id}", nonExistentId))
+            .andExpect(status().isNotFound());
+    }
+}

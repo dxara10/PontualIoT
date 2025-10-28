@@ -1,0 +1,7 @@
+package com.pontualiot.demo.model;
+
+public enum UserRole {
+    ADMIN,
+    OPERATOR,
+    VIEWER
+}

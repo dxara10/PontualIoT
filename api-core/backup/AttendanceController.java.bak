@@ -1,0 +1,33 @@
+package com.pontualiot.demo.controller;
+
+import com.pontualiot.demo.dto.AttendanceEventRequest;
+import com.pontualiot.demo.service.AttendanceService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/attendance")
+public class AttendanceController {
+
+    private final AttendanceService attendanceService;
+
+    public AttendanceController(AttendanceService attendanceService) {
+        this.attendanceService = attendanceService;
+    }
+
+    @PostMapping("/events")
+    public ResponseEntity<Map<String, Object>> recordAttendance(@Valid @RequestBody AttendanceEventRequest request) {
+        UUID eventId = attendanceService.recordEvent(request);
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(Map.of(
+                "eventId", eventId.toString(),
+                "status", "SUCCESS"
+            ));
+    }
+}

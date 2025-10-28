@@ -1,0 +1,56 @@
+package com.pontualiot.demo.service;
+
+import com.pontualiot.demo.model.Company;
+import com.pontualiot.demo.model.Device;
+import com.pontualiot.demo.model.CommunicationMode;
+import com.pontualiot.demo.repository.DeviceRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
+@Service
+public class DeviceService {
+
+    @Autowired
+    private DeviceRepository deviceRepository;
+
+    @Autowired
+    private CompanyService companyService;
+
+    public Device register(UUID companyId, String serialNumber, String model, String location, CommunicationMode communicationMode) {
+        Company company = companyService.findById(companyId);
+        
+        if (deviceRepository.existsBySerialNumber(serialNumber)) {
+            throw new IllegalArgumentException("Device with serial number " + serialNumber + " already exists");
+        }
+
+        Device device = new Device();
+        device.setSerialNumber(serialNumber);
+        device.setModel(model);
+        device.setLocation(location);
+        device.setCommunicationMode(communicationMode);
+        device.setCompany(company);
+        device.setActive(true);
+
+        return deviceRepository.save(device);
+    }
+
+    public void updateStatus(String serialNumber, boolean active) {
+        Device device = deviceRepository.findBySerialNumber(serialNumber)
+            .orElseThrow(() -> new IllegalArgumentException("Device not found with serial number: " + serialNumber));
+        
+        device.setActive(active);
+        deviceRepository.save(device);
+    }
+
+    public Device findBySerialNumber(String serialNumber) {
+        return deviceRepository.findBySerialNumber(serialNumber)
+            .orElseThrow(() -> new IllegalArgumentException("Device not found with serial number: " + serialNumber));
+    }
+
+    public Device findById(UUID id) {
+        return deviceRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Device not found with id: " + id));
+    }
+}

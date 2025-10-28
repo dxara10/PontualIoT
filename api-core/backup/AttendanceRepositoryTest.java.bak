@@ -1,0 +1,103 @@
+package com.pontualiot.demo.repository;
+
+import com.pontualiot.demo.entity.Attendance;
+import com.pontualiot.demo.entity.Employee;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DataJpaTest
+@Testcontainers
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class AttendanceRepositoryTest {
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    private Employee employee;
+
+    @BeforeEach
+    void setUp() {
+        employee = Employee.builder()
+                .name("Test Employee")
+                .email("test@pontual.com")
+                .rfidTag("RF999999")
+                .active(true)
+                .build();
+        employee = employeeRepository.save(employee);
+    }
+
+    @Test
+    void shouldSaveAttendance() {
+        // Given
+        Attendance attendance = Attendance.builder()
+                .employee(employee)
+                .checkIn(LocalDateTime.now())
+                .date(LocalDate.now())
+                .build();
+
+        // When
+        Attendance saved = attendanceRepository.save(attendance);
+
+        // Then
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getEmployee().getId()).isEqualTo(employee.getId());
+        assertThat(saved.getCheckIn()).isNotNull();
+        assertThat(saved.getDate()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void shouldFindByEmployeeAndDate() {
+        // Given
+        LocalDate today = LocalDate.now();
+        Attendance attendance = Attendance.builder()
+                .employee(employee)
+                .checkIn(LocalDateTime.now())
+                .date(today)
+                .build();
+        attendanceRepository.save(attendance);
+
+        // When
+        List<Attendance> found = attendanceRepository.findByEmployeeAndDate(employee, today);
+
+        // Then
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getEmployee().getId()).isEqualTo(employee.getId());
+    }
+
+    @Test
+    void shouldFindByEmployeeIdAndDateBetween() {
+        // Given
+        LocalDate startDate = LocalDate.now().minusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(1);
+        
+        Attendance attendance = Attendance.builder()
+                .employee(employee)
+                .checkIn(LocalDateTime.now())
+                .date(LocalDate.now())
+                .build();
+        attendanceRepository.save(attendance);
+
+        // When
+        List<Attendance> found = attendanceRepository.findByEmployeeIdAndDateBetween(
+                employee.getId(), startDate, endDate);
+
+        // Then
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getEmployee().getId()).isEqualTo(employee.getId());
+    }
+}

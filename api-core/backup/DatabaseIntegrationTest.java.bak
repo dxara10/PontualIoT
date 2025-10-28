@@ -1,0 +1,106 @@
+package com.pontualiot.demo.integration;
+
+import com.pontualiot.demo.entity.Attendance;
+import com.pontualiot.demo.entity.Employee;
+import com.pontualiot.demo.repository.AttendanceRepository;
+import com.pontualiot.demo.repository.EmployeeRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@Testcontainers
+@ActiveProfiles("test")
+@Transactional
+class DatabaseIntegrationTest {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Test
+    void shouldPersistEmployeeAndAttendanceWithPostgreSQL() {
+        // Given - Create employee
+        Employee employee = Employee.builder()
+                .name("Integration Test User")
+                .email("integration@pontual.com")
+                .rfidTag("RF_INT_001")
+                .active(true)
+                .build();
+
+        Employee savedEmployee = employeeRepository.save(employee);
+        assertThat(savedEmployee.getId()).isNotNull();
+
+        // When - Create attendance
+        Attendance attendance = Attendance.builder()
+                .employee(savedEmployee)
+                .checkIn(LocalDateTime.now())
+                .date(LocalDate.now())
+                .build();
+
+        Attendance savedAttendance = attendanceRepository.save(attendance);
+
+        // Then - Verify persistence
+        assertThat(savedAttendance.getId()).isNotNull();
+        assertThat(savedAttendance.getEmployee().getId()).isEqualTo(savedEmployee.getId());
+
+        // Verify queries work
+        List<Attendance> attendances = attendanceRepository.findByEmployeeAndDate(
+                savedEmployee, LocalDate.now());
+        assertThat(attendances).hasSize(1);
+
+        Employee foundEmployee = employeeRepository.findByRfidTag("RF_INT_001").orElse(null);
+        assertThat(foundEmployee).isNotNull();
+        assertThat(foundEmployee.getName()).isEqualTo("Integration Test User");
+    }
+
+    @Test
+    void shouldHandleMultipleAttendancesPerDay() {
+        // Given
+        Employee employee = Employee.builder()
+                .name("Multi Attendance User")
+                .email("multi@pontual.com")
+                .rfidTag("RF_MULTI_001")
+                .active(true)
+                .build();
+        employee = employeeRepository.save(employee);
+
+        LocalDate today = LocalDate.now();
+        
+        // When - Create multiple attendances
+        Attendance checkIn = Attendance.builder()
+                .employee(employee)
+                .checkIn(LocalDateTime.now().withHour(8))
+                .date(today)
+                .build();
+        
+        Attendance checkOut = Attendance.builder()
+                .employee(employee)
+                .checkIn(LocalDateTime.now().withHour(12))
+                .checkOut(LocalDateTime.now().withHour(13))
+                .date(today)
+                .build();
+
+        attendanceRepository.save(checkIn);
+        attendanceRepository.save(checkOut);
+
+        // Then
+        List<Attendance> todayAttendances = attendanceRepository.findByEmployeeAndDate(employee, today);
+        assertThat(todayAttendances).hasSize(2);
+
+        List<Attendance> rangeAttendances = attendanceRepository.findByEmployeeIdAndDateBetween(
+                employee.getId(), today.minusDays(1), today.plusDays(1));
+        assertThat(rangeAttendances).hasSize(2);
+    }
+}
