@@ -35,10 +35,28 @@ public class EmployeeController {
     @PostMapping
     @Operation(summary = "Create new employee")
     public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
-        employee.setCreatedAt(java.time.LocalDateTime.now());
-        employee.setUpdatedAt(java.time.LocalDateTime.now());
-        Employee saved = employeeRepository.save(employee);
-        return ResponseEntity.status(201).body(saved);
+        System.out.println("[EMPLOYEE] POST /employees chamado");
+        System.out.println("[EMPLOYEE] Dados recebidos: " + employee);
+        
+        try {
+            // Definir timestamps se não estiverem definidos
+            if (employee.getCreatedAt() == null) {
+                employee.setCreatedAt(java.time.LocalDateTime.now());
+            }
+            if (employee.getUpdatedAt() == null) {
+                employee.setUpdatedAt(java.time.LocalDateTime.now());
+            }
+            
+            System.out.println("[EMPLOYEE] Salvando no banco: " + employee);
+            Employee saved = employeeRepository.save(employee);
+            System.out.println("[EMPLOYEE] ✅ Salvo com sucesso: " + saved);
+            
+            return ResponseEntity.status(201).body(saved);
+        } catch (Exception e) {
+            System.err.println("[EMPLOYEE] ❌ Erro ao salvar: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @PutMapping("/{id}")

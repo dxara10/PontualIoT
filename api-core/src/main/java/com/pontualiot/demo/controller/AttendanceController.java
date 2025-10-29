@@ -42,8 +42,22 @@ public class AttendanceController {
 
     @GetMapping("/employee/{employeeId}")
     @Operation(summary = "Get attendances by employee ID")
-    public List<Attendance> getAttendancesByEmployee(@PathVariable Long employeeId) {
-        return attendanceRepository.findByEmployeeId(employeeId);
+    public ResponseEntity<List<Attendance>> getAttendancesByEmployee(@PathVariable Long employeeId) {
+        System.out.println("[ATTENDANCE] GET /attendances/employee/" + employeeId);
+        
+        if (employeeId == null) {
+            System.err.println("[ATTENDANCE] ❌ Employee ID é null");
+            return ResponseEntity.badRequest().build();
+        }
+        
+        try {
+            List<Attendance> attendances = attendanceRepository.findByEmployeeId(employeeId);
+            System.out.println("[ATTENDANCE] ✅ Encontrados " + attendances.size() + " registros");
+            return ResponseEntity.ok(attendances);
+        } catch (Exception e) {
+            System.err.println("[ATTENDANCE] ❌ Erro: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/date/{date}")
