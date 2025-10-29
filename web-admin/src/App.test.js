@@ -4,7 +4,7 @@ import App from './App';
 // TDD: Test 1 - App deve renderizar título
 test('renders PontualIoT title', () => {
   render(<App />);
-  const titleElement = screen.getByText(/PontualIoT/i);
+  const titleElement = screen.getByRole('heading', { name: /PontualIoT/i });
   expect(titleElement).toBeInTheDocument();
 });
 

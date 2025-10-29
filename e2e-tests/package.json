@@ -1,0 +1,13 @@
+{
+  "name": "pontualiot-e2e-tests",
+  "version": "1.0.0",
+  "description": "Testes E2E para integração completa do PontualIoT",
+  "scripts": {
+    "test": "jest",
+    "test:integration": "jest --testNamePattern='Integration'"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "axios": "^1.6.0"
+  }
+}

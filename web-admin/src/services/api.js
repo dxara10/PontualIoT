@@ -25,3 +25,13 @@ export const updateEmployee = async (id, employee) => {
 export const deleteEmployee = async (id) => {
   await api.delete(`/employees/${id}`);
 };
+
+export const getAttendances = async (filters = {}) => {
+  const response = await api.get('/attendances', { params: filters });
+  return response.data;
+};
+
+export const createAttendance = async (attendance) => {
+  const response = await api.post('/attendances', attendance);
+  return response.data;
+};

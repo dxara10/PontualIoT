@@ -38,6 +38,38 @@ if [ -f "iot-devices/simulator/pom.xml" ]; then
     cd ../..
 fi
 
+# Test Web Admin (se existir)
+if [ -f "web-admin/package.json" ]; then
+    log_info "Testando Web Admin..."
+    cd web-admin
+    if [ -d "node_modules" ]; then
+        if npm test -- --watchAll=false; then
+            log_success "✅ Web Admin - Testes passaram"
+        else
+            log_warning "⚠️ Web Admin - Testes falharam (continuando...)"
+        fi
+    else
+        log_warning "⚠️ Web Admin - Dependências não instaladas"
+    fi
+    cd ..
+fi
+
+# Test Mobile App (se existir)
+if [ -f "mobile-app/package.json" ]; then
+    log_info "Testando Mobile App..."
+    cd mobile-app
+    if [ -d "node_modules" ]; then
+        if npm test -- --watchAll=false; then
+            log_success "✅ Mobile App - Testes passaram"
+        else
+            log_warning "⚠️ Mobile App - Testes falharam (continuando...)"
+        fi
+    else
+        log_warning "⚠️ Mobile App - Dependências não instaladas"
+    fi
+    cd ..
+fi
+
 # 2. STAGE: Build
 echo ""
 log_info "🔨 STAGE 2: Build & Package"
@@ -69,29 +101,29 @@ fi
 
 # 4. STAGE: Deploy Local
 echo ""
-log_info "🚀 STAGE 4: Deploy Local"
-echo "-------------------------"
+log_info "🚀 STAGE 4: Deploy Completo"
+echo "----------------------------"
 
-# Subir PostgreSQL
-log_info "Subindo PostgreSQL..."
-if docker-compose up -d postgres; then
-    log_success "✅ PostgreSQL rodando"
+# Subir infraestrutura completa
+log_info "Subindo infraestrutura completa (PostgreSQL + MQTT + Monitoramento)..."
+if docker-compose up -d postgres mosquitto prometheus grafana; then
+    log_success "✅ Infraestrutura completa rodando"
 else
-    log_error "❌ Falha ao subir PostgreSQL"
+    log_error "❌ Falha ao subir infraestrutura"
     exit 1
 fi
 
-# Aguardar PostgreSQL
-log_info "Aguardando PostgreSQL inicializar..."
-sleep 5
+# Aguardar serviços
+log_info "Aguardando serviços inicializarem..."
+sleep 8
 
-# Verificar se API está rodando
+# Iniciar API Core
 if curl -s http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
     log_success "✅ API já está rodando na porta 8080"
 else
     log_info "Iniciando API Core..."
     cd api-core
-    nohup mvn spring-boot:run > /dev/null 2>&1 &
+    nohup mvn spring-boot:run > ../api-core.log 2>&1 &
     API_PID=$!
     cd ..
     
@@ -104,6 +136,43 @@ else
         fi
         sleep 2
     done
+fi
+
+# Iniciar IoT Simulator
+log_info "Iniciando IoT Simulator..."
+cd iot-devices/simulator
+nohup mvn exec:java -Dexec.mainClass="com.pontualiot.simulator.SimulatorApplication" > ../../simulator.log 2>&1 &
+SIMULATOR_PID=$!
+cd ../..
+log_success "✅ IoT Simulator iniciado"
+
+# Iniciar Web Admin (se existir)
+if [ -f "web-admin/package.json" ]; then
+    log_info "Iniciando Web Admin..."
+    cd web-admin
+    if [ -d "node_modules" ]; then
+        nohup npm start > ../web-admin.log 2>&1 &
+        WEB_PID=$!
+        log_success "✅ Web Admin iniciado na porta 3001"
+    else
+        log_warning "⚠️ Web Admin - dependências não instaladas"
+    fi
+    cd ..
+fi
+
+# Iniciar Mobile App (se existir)
+if [ -f "mobile-app/package.json" ]; then
+    log_info "Iniciando Mobile App..."
+    cd mobile-app
+    if [ -d "node_modules" ]; then
+        # Iniciar Expo com suporte a múltiplas plataformas
+        nohup npx expo start --tunnel > ../mobile-app.log 2>&1 &
+        MOBILE_PID=$!
+        log_success "✅ Mobile App iniciado (Web: 19006, Android/iOS via QR)"
+    else
+        log_warning "⚠️ Mobile App - dependências não instaladas"
+    fi
+    cd ..
 fi
 
 # 5. STAGE: Health Check
@@ -144,6 +213,69 @@ else
     log_warning "⚠️ Smoke Test - Criação de employee falhou"
 fi
 
+# 7. STAGE: E2E Integration Tests
+echo ""
+log_info "🔗 STAGE 7: Testes E2E de Integração"
+echo "-------------------------------------"
+
+if [ -f "e2e-tests/pom.xml" ]; then
+    log_info "Executando testes E2E de integração completa..."
+    cd e2e-tests
+    
+    # Aguardar todos os serviços estarem prontos
+    log_info "Aguardando todos os serviços estarem prontos..."
+    sleep 10
+    
+    # Executar testes E2E
+    if mvn clean test -q; then
+        log_success "✅ Testes E2E - Integração completa passou"
+    else
+        log_warning "⚠️ Testes E2E - Alguns testes falharam (continuando...)"
+    fi
+    cd ..
+else
+    log_warning "⚠️ Módulo E2E não encontrado"
+fi
+
+# Teste adicional de integração Web Admin (se disponível)
+if curl -s http://localhost:3001 > /dev/null 2>&1; then
+    log_success "✅ Web Admin - Acessível na porta 3001"
+else
+    log_warning "⚠️ Web Admin - Não acessível (pode não estar rodando)"
+fi
+
+# Teste de integração MQTT
+log_info "Testando integração MQTT..."
+if nc -z localhost 1883 2>/dev/null; then
+    log_success "✅ MQTT Broker - Acessível na porta 1883"
+else
+    log_warning "⚠️ MQTT Broker - Não acessível"
+fi
+
+# Teste de integração Prometheus
+log_info "Testando integração Prometheus..."
+if curl -s http://localhost:9090/-/healthy > /dev/null 2>&1; then
+    log_success "✅ Prometheus - Acessível na porta 9090"
+else
+    log_warning "⚠️ Prometheus - Não acessível"
+fi
+
+# Teste de integração Grafana
+log_info "Testando integração Grafana..."
+if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
+    log_success "✅ Grafana - Acessível na porta 3000"
+else
+    log_warning "⚠️ Grafana - Não acessível"
+fi
+
+# Teste de métricas da API
+log_info "Testando métricas da API..."
+if curl -s http://localhost:8080/api/actuator/prometheus | grep -q "jvm_memory"; then
+    log_success "✅ Métricas Prometheus - API expondo métricas"
+else
+    log_warning "⚠️ Métricas Prometheus - API não expondo métricas"
+fi
+
 # Resultado Final
 echo ""
 echo "=============================================="
@@ -151,11 +283,18 @@ log_success "🎉 ESTEIRA CI/CD EXECUTADA COM SUCESSO!"
 echo "=============================================="
 echo ""
 log_info "📊 Serviços Disponíveis:"
-echo "  • API Core: http://localhost:8080"
+echo "  • API Core: http://localhost:8080/api"
 echo "  • Swagger: http://localhost:8080/swagger-ui/index.html"
 echo "  • Health: http://localhost:8080/api/actuator/health"
+echo "  • IoT Simulator: Rodando em background"
+echo "  • Web Admin: http://localhost:3001 (se disponível)"
+echo "  • Mobile App Web: http://localhost:19006"
+echo "  • Mobile App Android/iOS: Escaneie QR code no terminal"
 echo "  • PostgreSQL: localhost:5432"
+echo "  • MQTT Broker: localhost:1883"
+echo "  • Prometheus: http://localhost:9090"
+echo "  • Grafana: http://localhost:3000 (admin/admin)"
 echo ""
 log_info "🔧 Para parar os serviços:"
 echo "  docker-compose down"
-echo "  pkill -f spring-boot:run"
+echo "  pkill -f 'spring-boot:run\|SimulatorApplication\|npm start\|expo start'"
