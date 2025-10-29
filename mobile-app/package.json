@@ -27,9 +27,10 @@
   },
   "jest": {
     "preset": "react-native",
-    "setupFilesAfterEnv": ["<rootDir>/__tests__/setup.js"],
+    "setupFilesAfterEnv": ["<rootDir>/setupTests.js"],
     "transformIgnorePatterns": [
-      "node_modules/(?!(react-native|@react-native|expo|@expo|react-navigation|@react-navigation)/)"
-    ]
+      "node_modules/(?!(react-native|@react-native|expo|@expo|react-navigation|@react-navigation|@react-native/js-polyfills)/)"
+    ],
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
   }
 }

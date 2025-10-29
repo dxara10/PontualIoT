@@ -1,5 +1,3 @@
-import 'react-native-gesture-handler/jestSetup';
-
 // Mock react-native modules
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 
@@ -9,11 +7,6 @@ jest.mock('expo-constants', () => ({
     manifest: {},
   },
 }));
-
-// Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
 
 // Mock navigation
 jest.mock('@react-navigation/native', () => ({
@@ -25,6 +18,15 @@ jest.mock('@react-navigation/native', () => ({
     params: {},
   }),
 }));
+
+// Mock axios
+const mockAxios = {
+  get: jest.fn(() => Promise.resolve({ data: [] })),
+  post: jest.fn(() => Promise.resolve({ data: {} })),
+  create: jest.fn(() => mockAxios),
+};
+
+jest.mock('axios', () => mockAxios);
 
 // Global test setup
 global.__DEV__ = true;

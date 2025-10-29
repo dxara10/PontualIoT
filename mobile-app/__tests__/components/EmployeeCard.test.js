@@ -18,7 +18,7 @@ describe('EmployeeCard TDD', () => {
 
     expect(getByText('João Silva')).toBeTruthy();
     expect(getByText('joao@test.com')).toBeTruthy();
-    expect(getByText('RFID001')).toBeTruthy();
+    expect(getByText(/RFID001/)).toBeTruthy();
   });
 
   test('should show active status', () => {

@@ -1,11 +1,13 @@
 import AttendanceService from '../src/services/attendanceService';
+import axios from 'axios';
 
-// Mock fetch
-global.fetch = jest.fn();
+// Mock axios
+jest.mock('axios');
+const mockedAxios = axios;
 
 describe('AttendanceService TDD', () => {
   beforeEach(() => {
-    fetch.mockClear();
+    jest.clearAllMocks();
   });
 
   describe('getEmployees', () => {
@@ -15,19 +17,16 @@ describe('AttendanceService TDD', () => {
         { id: 2, name: 'Maria Santos', rfidTag: 'RFID002' }
       ];
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockEmployees,
-      });
+      mockedAxios.get.mockResolvedValueOnce({ data: mockEmployees });
 
       const result = await AttendanceService.getEmployees();
 
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/employees');
+      expect(mockedAxios.get).toHaveBeenCalledWith('/employees');
       expect(result).toEqual(mockEmployees);
     });
 
     test('should handle fetch error', async () => {
-      fetch.mockRejectedValueOnce(new Error('Network error'));
+      mockedAxios.get.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(AttendanceService.getEmployees()).rejects.toThrow('Network error');
     });
@@ -42,33 +41,22 @@ describe('AttendanceService TDD', () => {
         type: 'CHECK_IN'
       };
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      });
+      mockedAxios.post.mockResolvedValueOnce({ data: mockResponse });
 
       const result = await AttendanceService.recordAttendance(1, 'CHECK_IN');
 
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/attendances', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          employeeId: 1,
-          type: 'CHECK_IN',
-          timestamp: expect.any(String)
-        }),
+      expect(mockedAxios.post).toHaveBeenCalledWith('/attendances', {
+        employeeId: 1,
+        type: 'CHECK_IN',
+        timestamp: expect.any(String)
       });
       expect(result).toEqual(mockResponse);
     });
 
     test('should handle invalid employee ID', async () => {
-      fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => ({ error: 'Employee not found' }),
-      });
+      const error = new Error('Request failed');
+      error.response = { status: 404 };
+      mockedAxios.post.mockRejectedValueOnce(error);
 
       await expect(AttendanceService.recordAttendance(999, 'CHECK_IN'))
         .rejects.toThrow('Employee not found');
@@ -81,17 +69,12 @@ describe('AttendanceService TDD', () => {
         { id: 1, employeeId: 1, checkIn: '08:00', checkOut: '17:00', date: '2024-01-15' }
       ];
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockHistory,
-      });
+      mockedAxios.get.mockResolvedValueOnce({ data: mockHistory });
 
       const filters = { employeeId: 1, startDate: '2024-01-01', endDate: '2024-01-31' };
       const result = await AttendanceService.getAttendanceHistory(filters);
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/api/attendances?employeeId=1&startDate=2024-01-01&endDate=2024-01-31'
-      );
+      expect(mockedAxios.get).toHaveBeenCalledWith('/attendances', { params: filters });
       expect(result).toEqual(mockHistory);
     });
   });
