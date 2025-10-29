@@ -1,0 +1,48 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "PontualIoT - Real Time Monitoring",
+    "tags": ["pontualiot"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Registros de Ponto em Tempo Real",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(attendance_records_total[1m])",
+            "legendFormat": "Registros/min"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Dispositivos Ativos",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "iot_devices_active",
+            "legendFormat": "Dispositivos"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "API Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "http_request_duration_seconds_sum / http_request_duration_seconds_count",
+            "legendFormat": "Avg Response Time"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      }
+    ],
+    "time": {"from": "now-5m", "to": "now"},
+    "refresh": "5s"
+  }
+}

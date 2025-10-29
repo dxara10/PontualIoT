@@ -1,0 +1,40 @@
+#!/bin/bash
+
+echo "🔍 Testando Sistema PontualIoT..."
+
+echo ""
+echo "📊 1. Testando API Core (localhost:8082):"
+curl -s http://localhost:8082/actuator/health && echo " ✅ Health OK" || echo " ❌ Health failed"
+curl -s http://localhost:8082/actuator/prometheus | head -5 && echo " ✅ Metrics OK" || echo " ❌ Metrics failed"
+
+echo ""
+echo "📈 2. Testando Prometheus (localhost:9090):"
+curl -s "http://localhost:9090/api/v1/query?query=up" | grep -o '"value":\[[^]]*\]' && echo " ✅ Prometheus OK" || echo " ❌ Prometheus failed"
+
+echo ""
+echo "📊 3. Testando Grafana (localhost:3000):"
+curl -s http://localhost:3000/api/health | grep -o '"database":"ok"' && echo " ✅ Grafana OK" || echo " ❌ Grafana failed"
+
+echo ""
+echo "📡 4. Testando MQTT (localhost:1883):"
+timeout 2 mosquitto_pub -h localhost -p 1883 -t "test" -m "hello" && echo " ✅ MQTT OK" || echo " ❌ MQTT failed"
+
+echo ""
+echo "🎯 Como usar Prometheus e Grafana:"
+echo ""
+echo "📈 PROMETHEUS (http://localhost:9090):"
+echo "  • Queries úteis:"
+echo "    - up (status dos serviços)"
+echo "    - attendance_records_total (total de registros)"
+echo "    - iot_devices_active (dispositivos ativos)"
+echo "    - http_request_duration_seconds (performance)"
+echo ""
+echo "📊 GRAFANA (http://localhost:3000):"
+echo "  • Login: admin/admin"
+echo "  • Dashboard já configurado: 'PontualIoT - Real Time Monitoring'"
+echo "  • Para criar novo dashboard:"
+echo "    1. + → Dashboard"
+echo "    2. Add Panel"
+echo "    3. Query: attendance_records_total"
+echo "    4. Visualization: Stat/Graph"
+echo ""

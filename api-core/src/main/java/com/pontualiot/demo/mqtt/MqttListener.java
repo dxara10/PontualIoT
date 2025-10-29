@@ -1,6 +1,7 @@
 package com.pontualiot.demo.mqtt;
 
 // Importações para listener MQTT
+import com.pontualiot.demo.service.MqttAttendanceProcessor;
 import org.slf4j.Logger;                    // Interface de logging
 import org.slf4j.LoggerFactory;             // Factory para criar loggers
 import org.springframework.beans.factory.annotation.Autowired; // Injeção de dependência
@@ -23,6 +24,9 @@ public class MqttListener {
     // Injeção do serviço de processamento de mensagens
     @Autowired
     private MqttAttendanceService attendanceService;
+    
+    @Autowired
+    private MqttAttendanceProcessor attendanceProcessor;
 
     /**
      * Processa mensagens MQTT de registro de ponto
@@ -73,14 +77,22 @@ public class MqttListener {
             // Log do início do processamento
             logger.debug("Processando mensagem de ponto - Tópico: {}", topic);
             
-            // Chama serviço para processar a mensagem
-            var attendance = attendanceService.processMqttMessage(topic, payload);
+            // Parse do payload JSON
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode json = mapper.readTree(payload);
+            
+            String deviceId = json.get("deviceId").asText();
+            String rfidTag = json.get("rfidTag").asText();
+            String eventType = json.get("eventType").asText();
+            
+            // Chama processador para criar registro
+            var attendance = attendanceProcessor.processAttendanceEvent(rfidTag, eventType, deviceId);
             
             // Log de sucesso com informações do registro
-            logger.info("Registro de ponto processado com sucesso - ID: {}, Funcionário: {}, Tipo: {}", 
+            logger.info("Registro de ponto processado com sucesso - ID: {}, Funcionário: {}, Evento: {}", 
                        attendance.getId(), 
                        attendance.getEmployee().getName(),
-                       attendance.getCheckOut() != null ? "CHECK_OUT" : "CHECK_IN");
+                       eventType);
             
         } catch (IllegalArgumentException e) {
             // Log de erro de validação (não é erro crítico)
@@ -101,9 +113,7 @@ public class MqttListener {
      * @return true se for tópico de ponto, false caso contrário
      */
     private boolean isAttendanceTopic(String topic) {
-        // Verifica se tópico segue padrão: devices/{deviceId}/attendance
-        return topic != null && 
-               topic.startsWith("devices/") &&     // Começa com "devices/"
-               topic.endsWith("/attendance");      // Termina com "/attendance"
+        // Verifica se tópico segue padrão: attendance/{deviceId}/{eventType}
+        return topic != null && topic.startsWith("attendance/");
     }
 }

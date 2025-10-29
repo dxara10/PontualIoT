@@ -86,8 +86,8 @@ log_info "Aguardando PostgreSQL inicializar..."
 sleep 5
 
 # Verificar se API está rodando
-if curl -s http://localhost:8082/api/actuator/health > /dev/null 2>&1; then
-    log_success "✅ API já está rodando na porta 8082"
+if curl -s http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
+    log_success "✅ API já está rodando na porta 8080"
 else
     log_info "Iniciando API Core..."
     cd api-core
@@ -98,8 +98,8 @@ else
     # Aguardar API inicializar
     log_info "Aguardando API inicializar..."
     for i in {1..30}; do
-        if curl -s http://localhost:8082/api/actuator/health > /dev/null 2>&1; then
-            log_success "✅ API Core rodando na porta 8082"
+        if curl -s http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
+            log_success "✅ API Core rodando na porta 8080"
             break
         fi
         sleep 2
@@ -112,7 +112,7 @@ log_info "🏥 STAGE 5: Health Check"
 echo "-------------------------"
 
 # Verificar saúde da API
-if curl -s http://localhost:8082/api/actuator/health | grep -q "UP"; then
+if curl -s http://localhost:8080/api/actuator/health | grep -q "UP"; then
     log_success "✅ API Health Check passou"
 else
     log_error "❌ API Health Check falhou"
@@ -120,7 +120,7 @@ else
 fi
 
 # Teste básico de endpoint
-if curl -s http://localhost:8082/api/api/employees > /dev/null; then
+if curl -s http://localhost:8080/api/employees > /dev/null; then
     log_success "✅ Endpoint /employees acessível"
 else
     log_error "❌ Endpoint /employees inacessível"
@@ -134,9 +134,9 @@ echo "------------------------"
 
 # Teste de criação de employee
 log_info "Testando criação de employee..."
-EMPLOYEE_RESPONSE=$(curl -s -X POST http://localhost:8082/api/api/employees \
+EMPLOYEE_RESPONSE=$(curl -s -X POST http://localhost:8080/api/employees \
   -H "Content-Type: application/json" \
-  -d '{"name":"CI Test","email":"ci@test.com","rfidTag":"CI001"}')
+  -d '{"name":"CI Test","email":"ci@test.com","rfidTag":"CI001","active":true}')
 
 if echo "$EMPLOYEE_RESPONSE" | grep -q "CI Test"; then
     log_success "✅ Smoke Test - Criação de employee"
@@ -151,9 +151,9 @@ log_success "🎉 ESTEIRA CI/CD EXECUTADA COM SUCESSO!"
 echo "=============================================="
 echo ""
 log_info "📊 Serviços Disponíveis:"
-echo "  • API Core: http://localhost:8082"
-echo "  • Swagger: http://localhost:8082/swagger-ui/index.html"
-echo "  • Health: http://localhost:8082/api/actuator/health"
+echo "  • API Core: http://localhost:8080"
+echo "  • Swagger: http://localhost:8080/swagger-ui/index.html"
+echo "  • Health: http://localhost:8080/api/actuator/health"
 echo "  • PostgreSQL: localhost:5432"
 echo ""
 log_info "🔧 Para parar os serviços:"

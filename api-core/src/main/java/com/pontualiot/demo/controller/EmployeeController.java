@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/employees")
+@RequestMapping("/employees")
 @Tag(name = "Employees", description = "Employee management operations")
 public class EmployeeController {
 
@@ -34,8 +34,11 @@ public class EmployeeController {
 
     @PostMapping
     @Operation(summary = "Create new employee")
-    public Employee createEmployee(@RequestBody Employee employee) {
-        return employeeRepository.save(employee);
+    public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
+        employee.setCreatedAt(java.time.LocalDateTime.now());
+        employee.setUpdatedAt(java.time.LocalDateTime.now());
+        Employee saved = employeeRepository.save(employee);
+        return ResponseEntity.status(201).body(saved);
     }
 
     @PutMapping("/{id}")

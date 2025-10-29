@@ -1,7 +1,9 @@
 package com.pontualiot.demo.controller;
 
+import com.pontualiot.demo.config.MetricsConfig;
 import com.pontualiot.demo.entity.Attendance;
 import com.pontualiot.demo.repository.AttendanceRepository;
+import io.micrometer.core.instrument.Counter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,16 +15,20 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/attendances")
+@RequestMapping("/attendances")
 @Tag(name = "Attendances", description = "Attendance record operations")
 public class AttendanceController {
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+    
+    @Autowired
+    private Counter attendanceRecordsCounter;
 
     @GetMapping
     @Operation(summary = "List all attendance records")
     public List<Attendance> getAllAttendances() {
+        attendanceRecordsCounter.increment();
         return attendanceRepository.findAll();
     }
 
