@@ -15,7 +15,7 @@ docker run -d --name test-postgres \
   -e POSTGRES_DB=pontualiot \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
+  -p 5433:5432 \
   postgres:14
 
 sleep 8
