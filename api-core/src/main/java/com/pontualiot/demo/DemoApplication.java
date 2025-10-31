@@ -11,32 +11,41 @@ import org.springframework.boot.autoconfigure.SpringBootApplication; // Anotaç�
  * CLASSE PRINCIPAL - PONTUAL IOT API CORE
  * ========================================
  * 
- * RESPONSABILIDADES:
- * - Inicializar aplicação Spring Boot
- * - Configurar context path: /api (definido em application.yml)
- * - Porta padrão: 8080 (definida em application.yml)
- * - Profile ativo: local (padrão)
+ * FLUXO DE INICIALIZAÇÃO:
+ * 1. JVM executa main()
+ * 2. SpringApplication.run() inicia o contexto Spring
+ * 3. Auto-configuração detecta dependências no classpath
+ * 4. Component scan encontra @Controller, @Service, @Repository
+ * 5. Configurações são carregadas (application.yml)
+ * 6. Tomcat embedded inicia na porta 8080
+ * 7. Context path /api é aplicado
+ * 8. Endpoints ficam disponíveis
  * 
- * DEPENDÊNCIAS PRINCIPAIS:
- * - PostgreSQL (porta 5433 configurada, mas rodando na 5432)
- * - MQTT Broker (porta 1883)
- * - Prometheus Metrics (endpoint /api/actuator/prometheus)
- * - Health Check (endpoint /api/actuator/health)
+ * ENDPOINTS PRINCIPAIS:
+ * - GET /api/actuator/health - Health check
+ * - GET /api/employees - Lista funcionários
+ * - POST /api/employees - Cria funcionário
+ * - GET /api/attendances - Lista registros de ponto
+ * - POST /api/test-attendance/check-in/{id} - Registra entrada
  * 
- * PROBLEMAS CONHECIDOS:
- * - Inconsistência de porta PostgreSQL (config vs realidade)
- * - API não está rodando (precisa investigar logs)
+ * DEPENDÊNCIAS EXTERNAS:
+ * - PostgreSQL: jdbc:postgresql://localhost:5432/pontualiot
+ * - MQTT Broker: tcp://localhost:1883
+ * - Prometheus: /api/actuator/prometheus
  */
-@SpringBootApplication // Habilita: auto-config + component-scan + configuration
+@SpringBootApplication // Combina @Configuration + @EnableAutoConfiguration + @ComponentScan
 public class DemoApplication {
 
     /**
-     * MÉTODO MAIN - PONTO DE ENTRADA
+     * MÉTODO MAIN - PONTO DE ENTRADA DA APLICAÇÃO
      * 
-     * Este método inicia toda a aplicação Spring Boot.
-     * Se houver erro aqui, a API não sobe.
+     * SEQUÊNCIA DE INICIALIZAÇÃO:
+     * 1. Logs de startup são exibidos
+     * 2. SpringApplication.run() é chamado
+     * 3. Se sucesso: aplicação fica disponível
+     * 4. Se erro: exceção é lançada e aplicação para
      * 
-     * @param args argumentos da linha de comando
+     * @param args argumentos da linha de comando (profiles, propriedades, etc)
      */
     public static void main(String[] args) {
         System.out.println("[STARTUP] Iniciando PontualIoT API Core...");
@@ -45,13 +54,14 @@ public class DemoApplication {
         System.out.println("[STARTUP] Health check: http://localhost:8080/api/actuator/health");
         
         try {
-            // Inicia a aplicação Spring Boot
+            // Inicia o contexto Spring Boot completo
+            // Isso inclui: Tomcat, JPA, Security, MQTT, Metrics
             SpringApplication.run(DemoApplication.class, args);
             System.out.println("[STARTUP] ✅ Aplicação iniciada com sucesso!");
         } catch (Exception e) {
             System.err.println("[STARTUP] ❌ Erro ao iniciar aplicação: " + e.getMessage());
             e.printStackTrace();
-            throw e;
+            throw e; // Re-lança para parar a aplicação
         }
     }
 }

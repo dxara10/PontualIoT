@@ -1,6 +1,8 @@
 package com.pontualiot.demo.mqtt;
 
-// Importações para teste TDD MQTT
+// ========================================
+// IMPORTAÇÕES PARA TESTES TDD MQTT
+// ========================================
 import com.pontualiot.demo.entity.Attendance; // Entidade de registro de ponto
 import com.pontualiot.demo.entity.Employee;   // Entidade de funcionário
 import com.pontualiot.demo.repository.AttendanceRepository; // Repositório de registros
